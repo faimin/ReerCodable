@@ -28,10 +28,6 @@ Pod::Spec.new do |s|
 
   s.swift_versions = '5.10'
 
-  s.source_files = 'Sources/ReerCodable/**/*'
-
-  s.preserve_paths = ["Package.swift", "Sources/ReerCodableMacros", "Tests"]
-
   require 'etc'
 
   ARM64 = "arm64"
@@ -39,8 +35,14 @@ Pod::Spec.new do |s|
 
   other_swift_flags = ''
   if arch == ARM64
+    s.source_files = 'Sources/**/*', 'MacroPlugin/ReerCodableMacros'
+    s.exclude_files = 'Sources/ReerCodableMacros'
+
     other_swift_flags = '-Xfrontend -load-plugin-executable -Xfrontend ${PODS_ROOT}/ReerCodable/MacroPlugin/ReerCodableMacros#ReerCodableMacros'
   else
+    s.source_files = 'Sources/ReerCodable/**/*'
+    s.preserve_paths = ["Package.swift", "Sources/ReerCodableMacros", "Tests"]
+
     other_swift_flags = '-Xfrontend -load-plugin-executable -Xfrontend $(PODS_BUILD_DIR)/ReerCodable/release/ReerCodableMacros-tool#ReerCodableMacros'
   end
 
