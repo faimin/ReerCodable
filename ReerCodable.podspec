@@ -25,32 +25,45 @@ Pod::Spec.new do |s|
   s.watchos.deployment_target = "6.0"
   s.tvos.deployment_target = "13.0"
   s.visionos.deployment_target = "1.0"
-  
+
   s.swift_versions = '5.10'
 
   s.source_files = 'Sources/ReerCodable/**/*'
-  
+
   s.preserve_paths = ["Package.swift", "Sources/ReerCodableMacros", "Tests"]
-  
+
+  require 'etc'
+
+  ARM64 = "arm64"
+  arch = Etc.uname[:machine] # get CPU arch
+
+  other_swift_flags = ''
+  if arch == ARM64
+    other_swift_flags = '-Xfrontend -load-plugin-executable -Xfrontend ${PODS_ROOT}/ReerCodable/MacroPlugin/ReerCodableMacros#ReerCodableMacros'
+  else
+    other_swift_flags = '-Xfrontend -load-plugin-executable -Xfrontend $(PODS_BUILD_DIR)/ReerCodable/release/ReerCodableMacros-tool#ReerCodableMacros'
+  end
+
   s.pod_target_xcconfig = {
-    'OTHER_SWIFT_FLAGS' => '-Xfrontend -load-plugin-executable -Xfrontend $(PODS_BUILD_DIR)/ReerCodable/release/ReerCodableMacros-tool#ReerCodableMacros'
-  }
-  
-  s.user_target_xcconfig = {
-    'OTHER_SWIFT_FLAGS' => '-Xfrontend -load-plugin-executable -Xfrontend $(PODS_BUILD_DIR)/ReerCodable/release/ReerCodableMacros-tool#ReerCodableMacros'
-  }
-  
-  script = <<-SCRIPT
-    env -i PATH="$PATH" "$SHELL" -l -c "swift build -c release --package-path \\"$PODS_TARGET_SRCROOT\\" --build-path \\"${PODS_BUILD_DIR}/ReerCodable\\""
-  SCRIPT
-  
-  s.script_phase = {
-    :name => 'Build ReerCodable macro plugin',
-    :script => script,
-    :execution_position => :before_compile,
-    :output_files => [
-      '$(PODS_BUILD_DIR)/ReerCodable/release/ReerCodableMacros-tool'
-    ]
+    'OTHER_SWIFT_FLAGS' => other_swift_flags
   }
 
+  s.user_target_xcconfig = {
+    'OTHER_SWIFT_FLAGS' => other_swift_flags
+  }
+
+  if arch != ARM64
+    script = <<-SCRIPT
+      env -i PATH="$PATH" "$SHELL" -l -c "swift build -c release --package-path \\"$PODS_TARGET_SRCROOT\\" --build-path \\"${PODS_BUILD_DIR}/ReerCodable\\""
+    SCRIPT
+
+    s.script_phase = {
+      :name => 'Build ReerCodable macro plugin',
+      :script => script,
+      :execution_position => :before_compile,
+      :output_files => [
+        '$(PODS_BUILD_DIR)/ReerCodable/release/ReerCodableMacros-tool'
+      ]
+    }
+  end
 end
